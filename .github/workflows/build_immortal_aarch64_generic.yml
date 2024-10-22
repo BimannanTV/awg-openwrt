@@ -1,4 +1,4 @@
-name: Create Release on Tag
+name: immortal_aarch64_generic
 # on: [workflow_dispatch]
 on:
   workflow_dispatch:
@@ -13,11 +13,11 @@ jobs:
     strategy:
       matrix:
         build_env:
-          - tag: "23.05.3"
-            pkgarch: mips_24kc
-            target: ath79
-            subtarget: generic
-            vermagic: "bfb9e8efe9d2256b7cf11f7c37b66747"
+          - tag: "23.05.4"
+            pkgarch: aarch64_generic
+            target: rockchip
+            subtarget: armv8
+            vermagic: "0ce3444fa49c0c1c5ea3ad054c05ca27"
 
     steps:
       - uses: actions/checkout@v4
