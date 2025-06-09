@@ -34,7 +34,6 @@ install_speedtest() {
         
         mkdir -p speedtest-cli && tar zxf speedtest.tgz -C ./speedtest-cli && chmod +x ./speedtest-cli/speedtest
         rm -f speedtest.tgz
-    fi
 }
 
 # Тестирование скорости
