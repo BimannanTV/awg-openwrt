@@ -38,7 +38,7 @@ install_speedtest() {
     printf "%-18s%-18s%-20s%-12s\n" " Node Name" "Upload" "Download" "Latency"
 }
 
-# Тестирование скорости
+# Тестирование скорости (все ошибки перенаправляются в лог)
 speed_test() {
     local server_id="$1"
     local node_name="$2"
