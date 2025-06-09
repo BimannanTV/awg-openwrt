@@ -50,11 +50,17 @@ speed_test() {
     local server_id="$1"
     local node_name="$2"
     
+    # Очистка лога перед каждым тестом
+    > speedtest.log
+    
     if [ -z "$server_id" ]; then
         ./speedtest-cli/speedtest --progress=no --accept-license --accept-gdpr > speedtest.log 2>&1
     else
         ./speedtest-cli/speedtest --progress=no --server-id="$server_id" --accept-license --accept-gdpr > speedtest.log 2>&1
     fi
+    
+    # Пауза 1 секунда между тестами
+    sleep 1
     
     if [ $? -eq 0 ]; then
         local dl=$(awk '/Download/{print $3" "$4}' speedtest.log)
