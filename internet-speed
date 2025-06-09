@@ -24,8 +24,8 @@ install_speedtest() {
             *) _red "Ошибка: Неподдерживаемая архитектура ($sysarch)\n" && exit 1 ;;
         esac
 
-        url1="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-${sys_bit}.tgz" 
-        url2="https://dl.lamp.sh/files/ookla-speedtest-1.2.0-linux-${sys_bit}.tgz" 
+        url1="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-${sys_bit}.tgz"    
+        url2="https://dl.lamp.sh/files/ookla-speedtest-1.2.0-linux-${sys_bit}.tgz"    
 
         if ! wget --no-check-certificate -q -O speedtest.tgz "$url1"; then
             if ! wget --no-check-certificate -q -O speedtest.tgz "$url2"; then
@@ -103,15 +103,27 @@ clear
 install_speedtest
 
 echo -e "Выберите режим:\n1. Стандартные серверы\n2. Ручной ввод сервера"
-read -r mode </dev/tty  # Фикс: явное указание терминала для ввода
+
+# Проверка доступности терминала
+if [ -t 0 ]; then
+    read -r mode
+else
+    _red "Ошибка: Терминал недоступен для ввода\n"
+    exit 1
+fi
+
+# Обработка некорректного ввода
+if [[ -z "$mode" ]]; then
+    _red "Ошибка: Ввод пустой\n"
+    exit 1
+elif ! [[ "$mode" =~ ^[1-2]$ ]]; then
+    _red "Неверный выбор: '$mode'. Допустимые значения: 1 или 2\n"
+    exit 1
+fi
 
 case "$mode" in
     1) run_standard_tests ;;
     2) manual_mode ;;
-    *) 
-        _red "Неверный выбор или ввод отменён\n"
-        exit 1
-        ;;
 esac
 
 # Удаление только временных файлов
