@@ -4,7 +4,6 @@
 _red() { printf '\033[0;31m%b\033[0m' "$1"; }
 _green() { printf '\033[0;32m%b\033[0m' "$1"; }
 _yellow() { printf '\033[0;33m%b\033[0m' "$1"; }
-_blue() { printf '\033[0;36m%b\033[0m' "$1"; }
 
 # Проверка наличия команды
 _exists() {
@@ -90,14 +89,6 @@ manual_mode() {
     speed_test "$server_id" "$node_name"
 }
 
-# Очистка (без удаления speedtest-cli)
-_cleanup() {
-    _red "\nСкрипт остановлен. Файлы не удалены.\n"
-    exit 1
-}
-
-trap '_cleanup' INT QUIT TERM
-
 # Основная логика
 clear
 install_speedtest
@@ -106,24 +97,18 @@ install_speedtest
 if [ -t 0 ]; then
     echo -e "Выберите режим:\n1. Стандартные серверы\n2. Ручной ввод сервера"
     read -r mode
+    case "$mode" in
+        1) run_standard_tests ;;
+        2) manual_mode ;;
+        *) 
+            _red "Неверный выбор: '$mode'. Допустимые значения: 1 или 2\n"
+            exit 1
+            ;;
+    esac
 else
     _yellow "Терминал недоступен. Использую режим стандартных серверов по умолчанию.\n"
-    mode=1
+    run_standard_tests
 fi
-
-# Обработка некорректного ввода
-if [[ -z "$mode" ]]; then
-    _red "Ошибка: Ввод пустой\n"
-    exit 1
-elif ! [[ "$mode" =~ ^[1-2]$ ]]; then
-    _red "Неверный выбор: '$mode'. Допустимые значения: 1 или 2\n"
-    exit 1
-fi
-
-case "$mode" in
-    1) run_standard_tests ;;
-    2) manual_mode ;;
-esac
 
 # Удаление временных файлов
-rm -f speedtest.log benchtest_*
+rm -f speedtest.log
