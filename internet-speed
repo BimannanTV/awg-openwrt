@@ -62,6 +62,7 @@ speed_test() {
 # Стандартные серверы
 run_standard_tests() {
     _green "Запуск тестов со стандартными серверами:\n"
+    printf "%-18s%-18s%-20s%-12s\n" " Node Name" "Upload" "Download" "Latency"
     speed_test '' 'Speedtest.net'
     speed_test '4718' 'Beeline, Moscow'
     speed_test '6210' 'Beeline, Sochi'
@@ -91,7 +92,6 @@ if [ $# -ge 1 ]; then
     speed_test "$server_id" "Custom Server"
 else
     # Стандартные тесты по умолчанию
-    printf "%-18s%-18s%-20s%-12s\n" " Node Name" "Upload" "Download" "Latency"
     run_standard_tests
 fi
 
