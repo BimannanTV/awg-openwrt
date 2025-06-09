@@ -61,10 +61,15 @@ speed_test() {
         local up=$(awk '/Upload/{print $3" "$4}' speedtest.log)
         local lat=$(awk '/Latency/{print $3" "$4}' speedtest.log)
         
+        # Если данные отсутствуют, заменяем их на "N/A"
+        dl=${dl:-N/A}
+        up=${up:-N/A}
+        lat=${lat:-N/A}
+        
         printf "\033[0;33m%-18s\033[0;32m%-18s\033[0;31m%-20s\033[0;36m%-12s\033[0m\n" \
             " $node_name" "$up" "$dl" "$lat"
     else
-        _red "Ошибка: Тест не выполнен\n"
+        _red "Ошибка: Тест не выполнен для $node_name\n"
     fi
 }
 
