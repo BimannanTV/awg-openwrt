@@ -38,26 +38,26 @@ install_speedtest() {
     printf "%-18s%-18s%-20s%-12s\n" " Node Name" "Upload" "Download" "Latency"
 }
 
-# Ручной режим (только ID сервера)
-manual_mode() {
-    _yellow "Введите Server ID (0 для выхода):"
-    read -r server_id
-    if [ "$server_id" = "0" ]; then
-        _green "Выход без теста\n"
-        exit 0
-    fi
-
-    # Автоматическое определение названия сервера по ID (опционально)
-    # Убедитесь, что jq установлен для автоматического получения названия
-    if command -v jq &> /dev/null; then
-        server_info=$(./speedtest-cli/speedtest --servers | jq -r '.servers[] | select(.id == "'$server_id'") | .name')
-        node_name="${server_info:-Unknown Server}"
+# Тестирование скорости
+speed_test() {
+    local server_id="$1"
+    local node_name="$2"
+    
+    if [ -z "$server_id" ]; then
+        ./speedtest-cli/speedtest --progress=no --accept-license --accept-gdpr > speedtest.log 2>&1
     else
-        node_name="ID: $server_id"
+        ./speedtest-cli/speedtest --progress=no --server-id="$server_id" --accept-license --accept-gdpr > speedtest.log 2>&1
     fi
 
-    _green "Запуск теста с сервером $node_name (ID: $server_id)\n"
-    speed_test "$server_id" "$node_name"
+    if [ $? -eq 0 ]; then
+        local dl=$(awk '/Download/{print $3" "$4}' speedtest.log)
+        local up=$(awk '/Upload/{print $3" "$4}' speedtest.log)
+        local lat=$(awk '/Latency/{print $3" "$4}' speedtest.log)
+        printf "\033[0;33m%-18s\033[0;32m%-18s\033[0;31m%-20s\033[0;36m%-12s\033[0m\n" \
+            " $node_name" "$up" "$dl" "$lat"
+    else
+        _red "Ошибка: Тест не выполнен\n"
+    fi
 }
 
 # Стандартные серверы
