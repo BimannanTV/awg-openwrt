@@ -73,7 +73,7 @@ run_standard_tests() {
     speed_test '4952' 'ETL, Mytish'
 }
 
-# Ручной режим (только ID сервера)
+# Ручной режим
 manual_mode() {
     _yellow "Введите Server ID (0 для выхода):"
     read -r server_id
@@ -82,14 +82,8 @@ manual_mode() {
         exit 0
     fi
 
-    # Автоматическое определение названия сервера по ID (опционально)
-    # Убедитесь, что jq установлен для автоматического получения названия
-    if command -v jq &> /dev/null; then
-        server_info=$(./speedtest-cli/speedtest --servers | jq -r '.servers[] | select(.id == "'$server_id'") | .name')
-        node_name="${server_info:-Unknown Server}"
-    else
-        node_name="ID: $server_id"
-    fi
+    echo -n "Введите название сервера: "
+    read -r node_name
 
     _green "Запуск теста с сервером $node_name (ID: $server_id)\n"
     speed_test "$server_id" "$node_name"
