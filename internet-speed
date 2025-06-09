@@ -50,32 +50,21 @@ speed_test() {
     local server_id="$1"
     local node_name="$2"
     
-    # Очистка лога перед каждым тестом
-    > speedtest.log
-    
     if [ -z "$server_id" ]; then
         ./speedtest-cli/speedtest --progress=no --accept-license --accept-gdpr > speedtest.log 2>&1
     else
         ./speedtest-cli/speedtest --progress=no --server-id="$server_id" --accept-license --accept-gdpr > speedtest.log 2>&1
     fi
     
-    # Пауза 1 секунда между тестами
-    sleep 1
-    
     if [ $? -eq 0 ]; then
         local dl=$(awk '/Download/{print $3" "$4}' speedtest.log)
         local up=$(awk '/Upload/{print $3" "$4}' speedtest.log)
         local lat=$(awk '/Latency/{print $3" "$4}' speedtest.log)
         
-        # Если данные отсутствуют, заменяем их на "N/A"
-        dl=${dl:-N/A}
-        up=${up:-N/A}
-        lat=${lat:-N/A}
-        
         printf "\033[0;33m%-18s\033[0;32m%-18s\033[0;31m%-20s\033[0;36m%-12s\033[0m\n" \
             " $node_name" "$up" "$dl" "$lat"
     else
-        _red "Ошибка: Тест не выполнен для $node_name\n"
+        _red "Ошибка: Тест не выполнен\n"
     fi
 }
 
@@ -84,43 +73,13 @@ run_standard_tests() {
     _green "Запуск тестов со стандартными серверами:\n"
     print_header
     speed_test '' 'Speedtest.net'
-    speed_test "Beeline, Moscow|4718"
-    speed_test "Beeline, Kaluga|4744"
-    speed_test "Beeline, Sochi|6210"
-    speed_test "Beeline, Nvsb|5045"
-    speed_test "Beeline, Ekat|6400"
-    speed_test "MTS, Moscow|10600"
-    speed_test "MTS, Moscow|1907"
-    speed_test "MTS, Spb|1905"
-    speed_test "MTS, Spb|4247"
-    speed_test "MTS, Nvsb|3868"
-    speed_test "MTS, Ekat|4908"
-    speed_test "MTS, Vladiv|1903"
-    speed_test "Tele2, Moscow|6562"
-    speed_test "Tele2, Spb|20477"
-    speed_test "Tele2, Spb|6051"
-    speed_test "Tele2, Ekat|6616"
-    speed_test "Tele2, Nvsb|6430"
-    speed_test "Tele2, Rostov|6429"
-    speed_test "Megafon, Moscow|6386"
-    speed_test "Megafon, Spb|6385"
-    speed_test "Megafon, Ekat|6437"
-    speed_test "Megafon, Nvsb|6389"
-    speed_test "MGTS, Moscow|6827"
-    speed_test "Rostel, Moscow|3682"
-    speed_test "Rostel, Spb|2599"
-    speed_test "Rostel, Ekat|21011"
-    speed_test "Rostel, Nvsb|3296"
-    speed_test "dom.ru, Moscow|14190"
-    speed_test "Rostel, Spb|2690"
-    speed_test "Rostel, Nvsb|2696"
-    speed_test "Rostel, Ekat|5844"
-    speed_test "Realnet, Simf|20019"
-    speed_test "Crimea, Simf|6918"
-    speed_test "Crimea, Simf|7436"
-    speed_test "Crimea, Simf|2477"
-    speed_test "Crimea, Sevas|7486"
-    speed_test "ETL, Mytish|4952"
+    speed_test '4718' 'Beeline, Moscow'
+    speed_test '6210' 'Beeline, Sochi'
+    speed_test '10600' 'MTS, Moscow'
+    speed_test '6562' 'Tele2, Moscow'
+    speed_test '6386' 'Megafon, Moscow'
+    speed_test '2477' 'Crimea, Simf'
+    speed_test '4952' 'ETL, Mytish'
 }
 
 # Обработка сигналов
