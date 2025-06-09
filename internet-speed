@@ -1,172 +1,100 @@
 #!/usr/bin/env bash
 
-# Description: Custom Speedtest Script
-# URL: https://github.com/artydev/speedtest-cli 
-# Author: artydev.ru
-
+# Цветовые коды
 _red() { printf '\033[0;31m%b\033[0m' "$1"; }
 _green() { printf '\033[0;32m%b\033[0m' "$1"; }
 _yellow() { printf '\033[0;33m%b\033[0m' "$1"; }
 _blue() { printf '\033[0;36m%b\033[0m' "$1"; }
 
-_exists() {
-    local cmd="$1"
-    if type type >/dev/null 2>&1; then
-        type "$cmd" >/dev/null 2>&1
-    elif command >/dev/null 2>&1; then
-        command -v "$cmd" >/dev/null 2>&1
-    else
-        which "$cmd" >/dev/null 2>&1
+# Проверка наличия команды
+_exists() { command -v "$1" >/dev/null 2>&1; }
+
+# Установка speedtest-cli
+install_speedtest() {
+    if [ ! -e "./speedtest-cli/speedtest" ]; then
+        _yellow "Устанавливаю speedtest-cli...\n"
+        sys_bit=""
+        local sysarch=$(uname -m)
+        case "$sysarch" in
+            x86_64) sys_bit="x86_64" ;;
+            aarch64|arm64) sys_bit="aarch64" ;;
+            armhf|armv7*) sys_bit="armhf" ;;
+            *) _red "Ошибка: Неподдерживаемая архитектура ($sysarch)\n" && exit 1 ;;
+        esac
+        
+        url1="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-${sys_bit}.tgz" 
+        url2="https://dl.lamp.sh/files/ookla-speedtest-1.2.0-linux-${sys_bit}.tgz" 
+        
+        if ! wget --no-check-certificate -q -O speedtest.tgz "$url1"; then
+            if ! wget --no-check-certificate -q -O speedtest.tgz "$url2"; then
+                _red "Ошибка: Не удалось скачать speedtest-cli\n"
+                exit 1
+            fi
+        fi
+        
+        mkdir -p speedtest-cli && tar zxf speedtest.tgz -C ./speedtest-cli && chmod +x ./speedtest-cli/speedtest
+        rm -f speedtest.tgz
     fi
+    
+    printf "%-18s%-18s%-20s%-12s\n" " Node Name" "Upload" "Download" "Latency"
 }
 
-trap _exit INT QUIT TERM
-
-_exit() {
-    _red "\nThe script has been terminated.\n"
-    exit 1
-}
-
-# Список серверов
-SERVERS=(
-    "Speedtest.net|"
-    "Beeline, Moscow|4718"
-    "Beeline, Kaluga|4744"
-    "Beeline, Sochi|6210"
-    "Beeline, Nvsb|5045"
-    "Beeline, Ekat|6400"
-    "MTS, Moscow|10600"
-    "MTS, Moscow|1907"
-    "MTS, Spb|1905"
-    "MTS, Spb|4247"
-    "MTS, Nvsb|3868"
-    "MTS, Ekat|4908"
-    "MTS, Vladiv|1903"
-    "Tele2, Moscow|6562"
-    "Tele2, Spb|20477"
-    "Tele2, Spb|6051"
-    "Tele2, Ekat|6616"
-    "Tele2, Nvsb|6430"
-    "Tele2, Rostov|6429"
-    "Megafon, Moscow|6386"
-    "Megafon, Spb|6385"
-    "Megafon, Ekat|6437"
-    "Megafon, Nvsb|6389"
-    "MGTS, Moscow|6827"
-    "Rostel, Moscow|3682"
-    "Rostel, Spb|2599"
-    "Rostel, Ekat|21011"
-    "Rostel, Nvsb|3296"
-    "dom.ru, Moscow|14190"
-    "Rostel, Spb|2690"
-    "Rostel, Nvsb|2696"
-    "Rostel, Ekat|5844"
-    "Realnet, Simf|20019"
-    "Crimea, Simf|6918"
-    "Crimea, Simf|7436"
-    "Crimea, Simf|2477"
-    "Crimea, Sevas|7486"
-    "ETL, Mytish|4952"
-)
-
+# Тестирование скорости
 speed_test() {
     local server_id="$1"
     local node_name="$2"
-
+    
     if [ -z "$server_id" ]; then
         ./speedtest-cli/speedtest --progress=no --accept-license --accept-gdpr > speedtest.log 2>&1
     else
         ./speedtest-cli/speedtest --progress=no --server-id="$server_id" --accept-license --accept-gdpr > speedtest.log 2>&1
     fi
-
+    
     if [ $? -eq 0 ]; then
-        local dl_speed up_speed latency
-        dl_speed=$(awk '/Download/{print $3" "$4}' speedtest.log)
-        up_speed=$(awk '/Upload/{print $3" "$4}' speedtest.log)
-        latency=$(awk '/Latency/{print $3" "$4}' speedtest.log)
-
+        local dl=$(awk '/Download/{print $3" "$4}' speedtest.log)
+        local up=$(awk '/Upload/{print $3" "$4}' speedtest.log)
+        local lat=$(awk '/Latency/{print $3" "$4}' speedtest.log)
+        
         printf "\033[0;33m%-18s\033[0;32m%-18s\033[0;31m%-20s\033[0;36m%-12s\033[0m\n" \
-            " ${node_name}" "${up_speed}" "${dl_speed}" "${latency}"
-    fi
-}
-
-install_speedtest() {
-    if [ ! -e "./speedtest-cli/speedtest" ]; then
-        sys_bit=""
-        local sysarch=$(uname -m)
-
-        if [ "$sysarch" = "x86_64" ]; then
-            sys_bit="x86_64"
-        elif [[ "$sysarch" =~ "i[3-6]86" ]]; then
-            sys_bit="i386"
-        elif [[ "$sysarch" =~ "armv[6-8]" || "$sysarch" =~ "aarch64" ]]; then
-            sys_bit="armhf"
-        else
-            _red "Error: Unsupported system architecture ($sysarch)\n"
-            exit 1
-        fi
-
-        url1="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-${sys_bit}.tgz" 
-        url2="https://dl.lamp.sh/files/ookla-speedtest-1.2.0-linux-${sys_bit}.tgz" 
-
-        if ! wget --no-check-certificate -q -O speedtest.tgz "$url1"; then
-            if ! wget --no-check-certificate -q -O speedtest.tgz "$url2"; then
-                _red "Error: Failed to download speedtest-cli\n"
-                exit 1
-            fi
-        fi
-
-        mkdir -p speedtest-cli && tar zxf speedtest.tgz -C ./speedtest-cli && chmod +x ./speedtest-cli/speedtest
-    fi
-
-    printf "%-18s%-18s%-20s%-12s\n" " Node Name" "Upload Speed" "Download Speed" "Latency"
-}
-
-print_menu() {
-    echo "Выберите сервер для теста (0 - все серверы):"
-    echo "----------------------------------------"
-    for i in "${!SERVERS[@]}"; do
-        IFS='|' read -r name id <<< "${SERVERS[$i]}"
-        echo "$((i+1)). $name ${id:+(ID: $id)}"
-    done
-    echo "----------------------------------------"
-    read -p "Введите номер сервера: " choice
-}
-
-main() {
-    clear
-    echo "-------------------- Speedtest CLI Custom --------------------"
-    echo " Версия: $(_green v1.0)"
-    echo "------------------------------------------------------------"
-
-    install_speedtest
-
-    local choice="$1"
-
-    if [ -z "$choice" ]; then
-        print_menu
-    fi
-
-    # Проверка корректности ввода
-    if ! [[ "$choice" =~ ^[0-9]+$ ]]; then
-        _red "\nОшибка: Введите число от 0 до ${#SERVERS[@]}.\n"
-        exit 1
-    fi
-
-    if [ "$choice" -eq 0 ]; then
-        for entry in "${SERVERS[@]}"; do
-            IFS='|' read -r name id <<< "$entry"
-            speed_test "$id" "$name"
-        done
-    elif [ "$choice" -ge 1 ] && [ "$choice" -le "${#SERVERS[@]}" ]; then
-        IFS='|' read -r name id <<< "${SERVERS[$((choice-1))]}"
-        speed_test "$id" "$name"
+            " $node_name" "$up" "$dl" "$lat"
     else
-        _red "\nНеверный выбор: введите число от 0 до ${#SERVERS[@]}.\n"
-        exit 1
+        _red "Ошибка: Тест не выполнен\n"
     fi
-
-    rm -f speedtest.log
 }
 
-main "$@"
+# Стандартные серверы
+run_standard_tests() {
+    _green "Запуск тестов со стандартными серверами:\n"
+    speed_test '' 'Speedtest.net'
+    speed_test '4718' 'Beeline, Moscow'
+    speed_test '6210' 'Beeline, Sochi'
+    speed_test '10600' 'MTS, Moscow'
+    speed_test '6562' 'Tele2, Moscow'
+    speed_test '6386' 'Megafon, Moscow'
+    speed_test '2477' 'Crimea, Simf'
+    speed_test '4952' 'ETL, Mytish'
+}
+
+# Обработка сигналов
+trap 'rm -f speedtest.log; exit 1' INT QUIT TERM
+
+# Основная логика
+clear
+install_speedtest
+
+if [ $# -ge 1 ]; then
+    # Ручной режим через параметры командной строки
+    server_id="$1"
+    if [ "$server_id" = "0" ]; then
+        _green "Выход без теста\n"
+        exit 0
+    fi
+    _green "Запуск теста с сервером ID: $server_id\n"
+    speed_test "$server_id" "Custom Server"
+else
+    # Стандартные тесты по умолчанию
+    run_standard_tests
+fi
+
+# Удаление только временных файлов
+rm -f speedtest.log benchtest_*
