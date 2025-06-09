@@ -103,13 +103,16 @@ clear
 install_speedtest
 
 echo -e "Выберите режим:\n1. Стандартные серверы\n2. Ручной ввод сервера"
-read -r mode
+read -r mode </dev/tty  # Фикс: явное указание терминала для ввода
 
 case "$mode" in
     1) run_standard_tests ;;
     2) manual_mode ;;
-    *) _red "Неверный выбор\n" && exit 1 ;;
+    *) 
+        _red "Неверный выбор или ввод отменён\n"
+        exit 1
+        ;;
 esac
 
-# Удаление только временных файлов, кроме speedtest-cli
+# Удаление только временных файлов
 rm -f speedtest.log benchtest_*
