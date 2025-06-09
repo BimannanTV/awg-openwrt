@@ -73,13 +73,10 @@ run_standard_tests() {
     _green "Запуск тестов со стандартными серверами:\n"
     print_header
     speed_test '' 'Speedtest.net'
-    speed_test '4718' 'Beeline, Moscow'
-    speed_test '6210' 'Beeline, Sochi'
-    speed_test '10600' 'MTS, Moscow'
-    speed_test '6562' 'Tele2, Moscow'
-    speed_test '6386' 'Megafon, Moscow'
-    speed_test '2477' 'Crimea, Simf'
-    speed_test '4952' 'ETL, Mytish'
+    speed_test '69511' 'Beeline, Stavropol'
+	speed_test '33567' 'Molniya, Stavropol'
+	speed_test '6036' 'First Digital TV Ltd, Stavropol'
+	speed_test '1084' 'MegaFon, Stavropol'
 }
 
 # Обработка сигналов
