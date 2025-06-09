@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Description: Speedtest Script with Interactive Server Selection
+# Description: Custom Speedtest Script
 # URL: https://github.com/artydev/speedtest-cli 
 # Author: artydev.ru
 
@@ -27,6 +27,7 @@ _exit() {
     exit 1
 }
 
+# Список серверов
 SERVERS=(
     "Speedtest.net|"
     "Beeline, Moscow|4718"
@@ -68,21 +69,10 @@ SERVERS=(
     "ETL, Mytish|4952"
 )
 
-print_menu() {
-    echo "Выберите сервер для теста (0 - все серверы):"
-    echo "----------------------------------------"
-    for i in "${!SERVERS[@]}"; do
-        IFS='|' read -r name id <<< "${SERVERS[$i]}"
-        echo "$((i+1)). $name ${id:+(ID: $id)}"
-    done
-    echo "----------------------------------------"
-    read -p "Введите номер сервера: " choice
-}
-
 speed_test() {
     local server_id="$1"
     local node_name="$2"
-    
+
     if [ -z "$server_id" ]; then
         ./speedtest-cli/speedtest --progress=no --accept-license --accept-gdpr > speedtest.log 2>&1
     else
@@ -94,7 +84,7 @@ speed_test() {
         dl_speed=$(awk '/Download/{print $3" "$4}' speedtest.log)
         up_speed=$(awk '/Upload/{print $3" "$4}' speedtest.log)
         latency=$(awk '/Latency/{print $3" "$4}' speedtest.log)
-        
+
         printf "\033[0;33m%-18s\033[0;32m%-18s\033[0;31m%-20s\033[0;36m%-12s\033[0m\n" \
             " ${node_name}" "${up_speed}" "${dl_speed}" "${latency}"
     fi
@@ -104,7 +94,7 @@ install_speedtest() {
     if [ ! -e "./speedtest-cli/speedtest" ]; then
         sys_bit=""
         local sysarch=$(uname -m)
-        
+
         if [ "$sysarch" = "x86_64" ]; then
             sys_bit="x86_64"
         elif [[ "$sysarch" =~ "i[3-6]86" ]]; then
@@ -115,22 +105,32 @@ install_speedtest() {
             _red "Error: Unsupported system architecture ($sysarch)\n"
             exit 1
         fi
-        
+
         url1="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-${sys_bit}.tgz" 
         url2="https://dl.lamp.sh/files/ookla-speedtest-1.2.0-linux-${sys_bit}.tgz" 
-        
+
         if ! wget --no-check-certificate -q -O speedtest.tgz "$url1"; then
             if ! wget --no-check-certificate -q -O speedtest.tgz "$url2"; then
                 _red "Error: Failed to download speedtest-cli\n"
                 exit 1
             fi
         fi
-        
+
         mkdir -p speedtest-cli && tar zxf speedtest.tgz -C ./speedtest-cli && chmod +x ./speedtest-cli/speedtest
-        rm -f speedtest.tgz
     fi
-    
+
     printf "%-18s%-18s%-20s%-12s\n" " Node Name" "Upload Speed" "Download Speed" "Latency"
+}
+
+print_menu() {
+    echo "Выберите сервер для теста (0 - все серверы):"
+    echo "----------------------------------------"
+    for i in "${!SERVERS[@]}"; do
+        IFS='|' read -r name id <<< "${SERVERS[$i]}"
+        echo "$((i+1)). $name ${id:+(ID: $id)}"
+    done
+    echo "----------------------------------------"
+    read -p "Введите номер сервера: " choice
 }
 
 main() {
@@ -140,7 +140,12 @@ main() {
     echo "------------------------------------------------------------"
 
     install_speedtest
-    print_menu
+
+    local choice="$1"
+
+    if [ -z "$choice" ]; then
+        print_menu
+    fi
 
     # Проверка корректности ввода
     if ! [[ "$choice" =~ ^[0-9]+$ ]]; then
@@ -164,4 +169,4 @@ main() {
     rm -f speedtest.log
 }
 
-main
+main "$@"
