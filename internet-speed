@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+
+# Цветовые коды
+_red() { printf '\033[0;31m%b\033[0m' "$1"; }
+_green() { printf '\033[0;32m%b\033[0m' "$1"; }
+_yellow() { printf '\033[0;33m%b\033[0m' "$1"; }
+_blue() { printf '\033[0;36m%b\033[0m' "$1"; }
+
+# Проверка наличия команды
+_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Установка speedtest-cli
+install_speedtest() {
+    if [ ! -e "./speedtest-cli/speedtest" ]; then
+        _yellow "Устанавливаю speedtest-cli...\n"
+        sys_bit=""
+        local sysarch=$(uname -m)
+        case "$sysarch" in
+            x86_64) sys_bit="x86_64" ;;
+            aarch64|arm64) sys_bit="aarch64" ;;
+            armhf|armv7*) sys_bit="armhf" ;;
+            *) _red "Ошибка: Неподдерживаемая архитектура ($sysarch)\n" && exit 1 ;;
+        esac
+
+        url1="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-${sys_bit}.tgz" 
+        url2="https://dl.lamp.sh/files/ookla-speedtest-1.2.0-linux-${sys_bit}.tgz" 
+
+        if ! wget --no-check-certificate -q -O speedtest.tgz "$url1"; then
+            if ! wget --no-check-certificate -q -O speedtest.tgz "$url2"; then
+                _red "Ошибка: Не удалось скачать speedtest-cli\n"
+                exit 1
+            fi
+        fi
+
+        mkdir -p speedtest-cli && tar zxf speedtest.tgz -C ./speedtest-cli && chmod +x ./speedtest-cli/speedtest
+    fi
+    printf "%-18s%-18s%-20s%-12s\n" " Node Name" "Upload" "Download" "Latency"
+}
+
+# Тестирование скорости
+speed_test() {
+    local server_id="$1"
+    local node_name="$2"
+    
+    if [ -z "$server_id" ]; then
+        ./speedtest-cli/speedtest --progress=no --accept-license --accept-gdpr > speedtest.log 2>&1
+    else
+        ./speedtest-cli/speedtest --progress=no --server-id="$server_id" --accept-license --accept-gdpr > speedtest.log 2>&1
+    fi
+
+    if [ $? -eq 0 ]; then
+        local dl=$(awk '/Download/{print $3" "$4}' speedtest.log)
+        local up=$(awk '/Upload/{print $3" "$4}' speedtest.log)
+        local lat=$(awk '/Latency/{print $3" "$4}' speedtest.log)
+        printf "\033[0;33m%-18s\033[0;32m%-18s\033[0;31m%-20s\033[0;36m%-12s\033[0m\n" \
+            " $node_name" "$up" "$dl" "$lat"
+    else
+        _red "Ошибка: Тест не выполнен\n"
+    fi
+}
+
+# Стандартные серверы
+run_standard_tests() {
+    _green "Запуск тестов со стандартными серверами:\n"
+    speed_test '' 'Speedtest.net'
+    speed_test '4718' 'Beeline, Moscow'
+    speed_test '6210' 'Beeline, Sochi'
+    speed_test '10600' 'MTS, Moscow'
+    speed_test '6562' 'Tele2, Moscow'
+    speed_test '6386' 'Megafon, Moscow'
+    speed_test '2477' 'Crimea, Simf'
+    speed_test '4952' 'ETL, Mytish'
+}
+
+# Ручной режим
+manual_mode() {
+    _yellow "Введите Server ID (0 для выхода):"
+    read -r server_id
+    if [ "$server_id" = "0" ]; then
+        _green "Выход без теста\n"
+        exit 0
+    fi
+
+    echo -n "Введите название сервера: "
+    read -r node_name
+
+    _green "Запуск теста с сервером $node_name (ID: $server_id)\n"
+    speed_test "$server_id" "$node_name"
+}
+
+# Очистка (без удаления speedtest-cli)
+_cleanup() {
+    _red "\nСкрипт остановлен. Файлы не удалены.\n"
+    exit 1
+}
+
+trap '_cleanup' INT QUIT TERM
+
+# Основная логика
+clear
+install_speedtest
+
+echo -e "Выберите режим:\n1. Стандартные серверы\n2. Ручной ввод сервера"
+read -r mode
+
+case "$mode" in
+    1) run_standard_tests ;;
+    2) manual_mode ;;
+    *) _red "Неверный выбор\n" && exit 1 ;;
+esac
+
+# Удаление только временных файлов, кроме speedtest-cli
+rm -f speedtest.log benchtest_*
